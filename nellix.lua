@@ -73,15 +73,10 @@ MoveSec:NewToggle("Fly", "Toggle flight", function(state)
     end
 end)
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
--- Переменные
+-- Spider Climb
 local spiderEnabled = false
 local climbSpeed = 50
 
--- Функция проверки стены
 local function isNearWall()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
@@ -106,27 +101,18 @@ local function isNearWall()
     return false
 end
 
--- Основной цикл Spider Climb
-RunService.RenderStepped:Connect(function(dt)
+RunService.RenderStepped:Connect(function()
     if not spiderEnabled then return end
-
     local char = LocalPlayer.Character
-    if not char then return end
-
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    if isNearWall() then
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp and isNearWall() then
         hrp.Velocity = Vector3.new(hrp.Velocity.X, climbSpeed, hrp.Velocity.Z)
     end
 end)
 
--- Вставь это в Movement секцию Kavo UI:
 MoveSec:NewToggle("Spider Climb", "Быстрое лазание по стенам и крышам", function(state)
     spiderEnabled = state
 end)
-
-
 
 --// 2. Defender Tab
 local Defender = Window:NewTab("Defender")
@@ -248,11 +234,9 @@ ExtrasSection:NewButton("Auto Join", "Join same game on different server", funct
     local PlaceId = game.PlaceId
     local JobId = game.JobId
 
-    -- Загружаем этот же скрипт после телепорта
     local scriptSource = game:HttpGet("https://raw.githubusercontent.com/yourusername/yourrepo/main/yourScript.lua")
     queue_on_teleport(scriptSource)
 
-    -- Находим сервер и телепортируемся
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
     for _, server in pairs(servers.data) do
         if server.id ~= JobId then
@@ -261,7 +245,6 @@ ExtrasSection:NewButton("Auto Join", "Join same game on different server", funct
         end
     end
 end)
-
 
 local lastPlaceId = nil
 ExtrasSection:NewTextBox("Find Player (Username)", "Check status", function(name)
@@ -296,14 +279,10 @@ ExtrasSection:NewTextBox("Find Player (Username)", "Check status", function(name
                 status = "Оффлайн"
             end
             local label = ExtrasSection:NewLabel("["..name.."] - "..status)
-            task.delay(7, function()
-                label:Remove()
-            end)
+            task.delay(7, function() label:Remove() end)
         else
             local label = ExtrasSection:NewLabel("["..name.."] - Не найден")
-            task.delay(7, function()
-                label:Remove()
-            end)
+            task.delay(7, function() label:Remove() end)
         end
     end
 end)
@@ -326,3 +305,52 @@ ExtrasSection:NewButton("Go Dupe", "Duplicate held tools", function()
         end
     end
 end)
+
+ExtrasSection:NewToggle("Infinity Jump", "Бесконечные прыжки", function(state)
+    infJumpEnabled = state
+end)
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if infJumpEnabled and game.Players.LocalPlayer.Character then
+        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+local function isBrainrotGame()
+    return game.PlaceId == 17454934040
+end
+
+local function setupBrainrotBypass()
+    if not isBrainrotGame() then return end
+
+    local char = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+    local function disableCollisions()
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+
+    RunService.Stepped:Connect(function()
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            disableCollisions()
+        end
+    end)
+
+    local mt = getrawmetatable(game)
+    local oldIndex = mt.__index
+    setreadonly(mt, false)
+    mt.__index = newcclosure(function(t, k)
+        if tostring(k):lower():find("collide") then
+            return true
+        end
+        return oldIndex(t, k)
+    end)
+    setreadonly(mt, true)
+end
+
+setupBrainrotBypass()
