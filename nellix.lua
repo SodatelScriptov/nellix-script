@@ -1,6 +1,14 @@
---// UI LIBRARY
+local customTheme = {
+    SchemeColor = Color3.fromRGB(30, 30, 30),       -- фон шапки окна
+    Background = Color3.fromRGB(20, 20, 20),        -- фон всего окна
+    Header = Color3.fromRGB(40, 40, 40),            -- фон верхней панели
+    TextColor = Color3.fromRGB(255, 255, 255),      -- текст
+    ElementColor = Color3.fromRGB(45, 45, 45),      -- элементы UI (кнопки, слайдеры и т.д.)
+    BorderColor = Color3.fromRGB(255, 255, 255)     -- обводка (не стандарт, но мы допишем ниже)
+}
+
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = library.CreateLib("Nellix", "LightTheme")
+local Window = library.CreateLib("Nellix", customTheme)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
