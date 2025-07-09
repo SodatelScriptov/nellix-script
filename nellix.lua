@@ -1,3 +1,13 @@
+--// UI LIBRARY
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = library.CreateLib("Nellix", "DarkTheme")
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+--// Add White Stroke Function
 local function addStroke(guiObject, color, thickness)
     local stroke = Instance.new("UIStroke")
     stroke.Color = color or Color3.fromRGB(255, 255, 255)
@@ -6,23 +16,18 @@ local function addStroke(guiObject, color, thickness)
     stroke.Parent = guiObject
 end
 
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = library.CreateLib("Nellix", customTheme)
-
--- Применить обводку ко всему GUI
-for _, v in pairs(game.CoreGui:GetDescendants()) do
-    if v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel") then
-        pcall(function()
-            addStroke(v, Color3.fromRGB(255, 255, 255), 1)
-        end)
+--// Add stroke to all frames and buttons
+task.delay(1, function()
+    for _, v in pairs(game.CoreGui:GetDescendants()) do
+        if v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel") then
+            pcall(function()
+                if not v:FindFirstChildOfClass("UIStroke") then
+                    addStroke(v)
+                end
+            end)
+        end
     end
-end
-
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+end)
 
 --// 1. Movement Tab
 local Movement = Window:NewTab("Movement")
@@ -211,7 +216,9 @@ end)
 local Render = Window:NewTab("Render")
 local RenderSec = Render:NewSection("Teleport Players")
 
+local selectedPlayer = nil
 local playersDropdown
+
 local function updatePlayerList()
     local list = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -220,7 +227,7 @@ local function updatePlayerList()
         end
     end
     if playersDropdown then
-        playersDropdown:Refresh(list, true) -- true = retain selected value
+        playersDropdown:Refresh(list, true)
     end
 end
 
@@ -233,12 +240,6 @@ task.spawn(function()
     while task.wait(5) do
         updatePlayerList()
     end
-end)
-
-
-local selectedPlayer = nil
-RenderSec:NewDropdown("Choose Player", "Select someone", playersList, function(p)
-    selectedPlayer = p
 end)
 
 RenderSec:NewButton("Teleport to Player", "Go to them", function()
@@ -389,3 +390,4 @@ local function setupBrainrotBypass()
 end
 
 setupBrainrotBypass()
+
