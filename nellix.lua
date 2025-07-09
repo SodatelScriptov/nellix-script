@@ -16,14 +16,15 @@ local function addStroke(guiObject, color, thickness)
     stroke.Parent = guiObject
 end
 
---// Add stroke to all frames and buttons
+-- Только GUI от Kavo UI
 task.delay(1, function()
-    for _, v in pairs(game.CoreGui:GetDescendants()) do
-        if v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel") then
+    local guiRoot = game.CoreGui:FindFirstChildWhichIsA("ScreenGui", true)
+    if not guiRoot then return end
+
+    for _, v in pairs(guiRoot:GetDescendants()) do
+        if (v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel")) and not v:FindFirstChildOfClass("UIStroke") then
             pcall(function()
-                if not v:FindFirstChildOfClass("UIStroke") then
-                    addStroke(v)
-                end
+                addStroke(v)
             end)
         end
     end
