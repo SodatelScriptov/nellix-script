@@ -1,14 +1,23 @@
-local customTheme = {
-    SchemeColor = Color3.fromRGB(30, 30, 30),       -- фон шапки окна
-    Background = Color3.fromRGB(20, 20, 20),        -- фон всего окна
-    Header = Color3.fromRGB(40, 40, 40),            -- фон верхней панели
-    TextColor = Color3.fromRGB(255, 255, 255),      -- текст
-    ElementColor = Color3.fromRGB(45, 45, 45),      -- элементы UI (кнопки, слайдеры и т.д.)
-    BorderColor = Color3.fromRGB(255, 255, 255)     -- обводка (не стандарт, но мы допишем ниже)
-}
+local function addStroke(guiObject, color, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or Color3.fromRGB(255, 255, 255)
+    stroke.Thickness = thickness or 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = guiObject
+end
 
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = library.CreateLib("Nellix", customTheme)
+
+-- Применить обводку ко всему GUI
+for _, v in pairs(game.CoreGui:GetDescendants()) do
+    if v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel") then
+        pcall(function()
+            addStroke(v, Color3.fromRGB(255, 255, 255), 1)
+        end)
+    end
+end
+
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -202,12 +211,30 @@ end)
 local Render = Window:NewTab("Render")
 local RenderSec = Render:NewSection("Teleport Players")
 
-local playersList = {}
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        table.insert(playersList, player.Name)
+local playersDropdown
+local function updatePlayerList()
+    local list = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(list, player.Name)
+        end
+    end
+    if playersDropdown then
+        playersDropdown:Refresh(list, true) -- true = retain selected value
     end
 end
+
+playersDropdown = RenderSec:NewDropdown("Choose Player", "Select someone", {}, function(p)
+    selectedPlayer = p
+end)
+
+updatePlayerList()
+task.spawn(function()
+    while task.wait(5) do
+        updatePlayerList()
+    end
+end)
+
 
 local selectedPlayer = nil
 RenderSec:NewDropdown("Choose Player", "Select someone", playersList, function(p)
