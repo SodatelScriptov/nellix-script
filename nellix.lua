@@ -7,29 +7,6 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
---// Add White Stroke Function
-local function addStroke(guiObject, color, thickness)
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color or Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = thickness or 1
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = guiObject
-end
-
--- Только GUI от Kavo UI
-task.delay(1, function()
-    local guiRoot = game.CoreGui:FindFirstChildWhichIsA("ScreenGui", true)
-    if not guiRoot then return end
-
-    for _, v in pairs(guiRoot:GetDescendants()) do
-        if (v:IsA("Frame") or v:IsA("TextButton") or v:IsA("TextLabel")) and not v:FindFirstChildOfClass("UIStroke") then
-            pcall(function()
-                addStroke(v)
-            end)
-        end
-    end
-end)
-
 --// 1. Movement Tab
 local Movement = Window:NewTab("Movement")
 local MoveSec = Movement:NewSection("Speed/Jump/Fly")
