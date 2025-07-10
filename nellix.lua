@@ -7,16 +7,20 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
---// 1. Movement Tab
+--// Movement Tab
 local Movement = Window:NewTab("Movement")
 local MoveSec = Movement:NewSection("Speed/Jump/Fly")
 
 MoveSec:NewSlider("Speed", "Adjust walk speed", 200, 16, function(val)
-    LocalPlayer.Character.Humanoid.WalkSpeed = val
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = val
+    end
 end)
 
 MoveSec:NewSlider("Jump", "Adjust jump power", 300, 50, function(val)
-    LocalPlayer.Character.Humanoid.JumpPower = val
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.JumpPower = val
+    end
 end)
 
 local flying = false
@@ -29,10 +33,11 @@ MoveSec:NewSlider("Fly Speed", "Adjust fly speed", 10, 1, function(val)
     flySpeed = val
 end)
 
-MoveSec:NewToggle("Fly", "Toggle flight", function(state)
-    flying = state
-    local humanoidRootPart = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+function toggleFly(state)
+    local humanoidRootPart = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
 
+    flying = state
     if state then
         bodyGyro = Instance.new("BodyGyro")
         bodyVelocity = Instance.new("BodyVelocity")
@@ -42,7 +47,7 @@ MoveSec:NewToggle("Fly", "Toggle flight", function(state)
         bodyGyro.CFrame = humanoidRootPart.CFrame
         bodyGyro.Parent = humanoidRootPart
 
-        bodyVelocity.velocity = Vector3.zero
+        bodyVelocity.velocity = Vector3.new(0, 0, 0)
         bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
         bodyVelocity.Parent = humanoidRootPart
 
@@ -71,6 +76,10 @@ MoveSec:NewToggle("Fly", "Toggle flight", function(state)
         bodyVelocity = nil
         flyConn = nil
     end
+end
+
+MoveSec:NewToggle("Fly", "Toggle flight", function(state)
+    toggleFly(state)
 end)
 
 -- Spider Climb
@@ -114,7 +123,7 @@ MoveSec:NewToggle("Spider Climb", "Быстрое лазание по стена
     spiderEnabled = state
 end)
 
---// 2. Defender Tab
+--// Defender Tab
 local Defender = Window:NewTab("Defender")
 local DefSec = Defender:NewSection("Defensive Tools")
 
@@ -158,7 +167,7 @@ DefSec:NewToggle("God Mode", "High HP mode", function(state)
     end
 end)
 
---// 3. Visuals
+--// Visuals Tab
 local Visuals = Window:NewTab("Visuals")
 local VisSec = Visuals:NewSection("Lighting and Items")
 
@@ -190,37 +199,31 @@ VisSec:NewToggle("Item ESP", "Highlight ground items", function(state)
     end
 end)
 
---// 4. Render Tab
+--// Render Tab
 local Render = Window:NewTab("Render")
 local RenderSec = Render:NewSection("Teleport Players")
 
 local selectedPlayer = nil
-local dropdownName = "Choose Player"
+local playerNames = {}
 
-local function updatePlayerList()
-    local names = {}
+local function updatePlayerDropdown()
+    playerNames = {}
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
-            table.insert(names, p.Name)
+            table.insert(playerNames, p.Name)
         end
     end
-    return names
 end
 
--- Создание дропдауна
-RenderSec:NewDropdown(dropdownName, "Select someone", updatePlayerList(), function(p)
-    selectedPlayer = p
+updatePlayerDropdown()
+Players.PlayerAdded:Connect(updatePlayerDropdown)
+Players.PlayerRemoving:Connect(updatePlayerDropdown)
+
+local playerDropdown = RenderSec:NewDropdown("Choose Player", "Select a player", playerNames, function(name)
+    selectedPlayer = name
 end)
 
--- Обновление дропдауна каждые 2 секунды
-task.spawn(function()
-    while true do
-        task.wait(2)
-        RenderSec:UpdateDropdown(dropdownName, updatePlayerList())
-    end
-end)
-
-RenderSec:NewButton("Teleport to Player", "Go to them", function()
+RenderSec:NewButton("Teleport to Player", "TP к выбранному игроку", function()
     if selectedPlayer then
         local plr = Players:FindFirstChild(selectedPlayer)
         if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -229,7 +232,7 @@ RenderSec:NewButton("Teleport to Player", "Go to them", function()
     end
 end)
 
-RenderSec:NewButton("Teleport Player to You", "Bring them", function()
+RenderSec:NewButton("Teleport Player to You", "TP игрока к тебе", function()
     if selectedPlayer then
         local plr = Players:FindFirstChild(selectedPlayer)
         if plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -238,9 +241,10 @@ RenderSec:NewButton("Teleport Player to You", "Bring them", function()
     end
 end)
 
---// 5. Extras Tab
+--// Extras Tab (восстановлен полностью)
 local Extras = Window:NewTab("Extras")
-local ExtrasSection = Extras:NewSection("Extra Tools")
+local ExtrasSection = Extras:NewSection("Extras")
+
 
 ExtrasSection:NewButton("Auto Join", "Join same game on different server", function()
     local TeleportService = game:GetService("TeleportService")
@@ -368,121 +372,65 @@ local function setupBrainrotBypass()
 end
 
 setupBrainrotBypass()
--- // Дополнения в секцию Extras
-local Extras = Window:NewTab("Modded")
-local ExtrasSection = Extras:NewSection("Modded Tools")
 
--- Walk on Water
-local waterWalkEnabled = false
-local waterPart = Instance.new("Part")
-waterPart.Size = Vector3.new(6, 1, 6)
-waterPart.Anchored = true
-waterPart.Transparency = 1
-waterPart.CanCollide = true
-waterPart.Parent = workspace
+--// Modded Tab (Invisible + Fake Lag + Save/TP)
+local Modded = Window:NewTab("Modded")
+local ModSec = Modded:NewSection("Save / Teleport / Invisible / Fake Lag")
 
-ExtrasSection:NewToggle("Walk Water", "Ходьба по воде", function(state)
-    waterWalkEnabled = state
-    waterPart.Transparency = state and 0.5 or 1
-end)
+local savedPosition = nil
 
-RunService.RenderStepped:Connect(function()
-    if waterWalkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        local pos = hrp.Position
-        local ray = Ray.new(pos, Vector3.new(0, -10, 0))
-        local hit = workspace:FindPartOnRay(ray, LocalPlayer.Character)
-        if hit and hit.Material == Enum.Material.Water then
-            waterPart.Position = Vector3.new(pos.X, hit.Position.Y + 2.5, pos.Z)
-        else
-            waterPart.Position = Vector3.new(0, -1000, 0)
-        end
+ModSec:NewButton("Save", "Save current position", function()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        savedPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
+        ModSec:NewLabel("Position saved!")
     end
 end)
 
--- Invisible Character
-ExtrasSection:NewButton("Invisible Character", "Становится невидимым", function()
+ModSec:NewButton("TP to Save", "Teleport to saved position", function()
+    if savedPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = savedPosition
+    else
+        ModSec:NewLabel("No saved position!")
+    end
+end)
+
+local invisibleEnabled = false
+
+local function setInvisible(state)
     local char = LocalPlayer.Character
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-            part.Transparency = 1
-            if part:FindFirstChild("face") then
-                part.face:Destroy()
-            end
+    if not char then return end
+
+    for _, part in pairs(char:GetChildren()) do
+        if part:IsA("BasePart") or part:IsA("Decal") or part:IsA("MeshPart") then
+            part.Transparency = state and 1 or 0
+        elseif part:IsA("Accessory") and part.Handle then
+            part.Handle.Transparency = state and 1 or 0
+        elseif part:IsA("CharacterMesh") then
+            part:Destroy() -- убирает лицо и волосы
         end
     end
-end)
-
--- Server Crasher
-ExtrasSection:NewButton("Server Crasher", "⚠️ Может лагать всех", function()
-    for i = 1, 200 do
-        local p = Instance.new("Part", workspace)
-        p.Anchored = false
-        p.Size = Vector3.new(10, 10, 10)
-        p.Position = LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, math.random(5, 20), 0)
-        p.Velocity = Vector3.new(math.random(-500, 500), math.random(-500, 500), math.random(-500, 500))
-        game.Debris:AddItem(p, 10)
+    -- Убираем лицо и волосы, чтобы не было видно
+    local face = char:FindFirstChild("face")
+    if face then
+        face.Transparency = state and 1 or 0
     end
+end
+
+ModSec:NewToggle("Invisible", "Make your character fully invisible", function(state)
+    invisibleEnabled = state
+    setInvisible(state)
 end)
 
--- Auto Collect Nearby Tools
-local autoCollect = false
-ExtrasSection:NewToggle("Auto Collect", "Подбирает вещи рядом", function(state)
-    autoCollect = state
+local fakeLagEnabled = false
+local fakeLagDelay = 0.1
+
+ModSec:NewToggle("Fake Lag", "Simulate lag by delaying actions", function(state)
+    fakeLagEnabled = state
 end)
 
+-- Если хочешь можно добавить какой-то fake lag функционал, например задержку перемещения и т.п.
 RunService.RenderStepped:Connect(function()
-    if autoCollect then
-        for _, item in pairs(workspace:GetDescendants()) do
-            if item:IsA("Tool") and item:FindFirstChild("Handle") and (item.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 12 then
-                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item.Handle, 0)
-                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item.Handle, 1)
-            end
-        end
-    end
-end)
-
--- Fake Lag
-local fakeLag = false
-local storedPos = nil
-ExtrasSection:NewToggle("Fake Lag", "Зависает и резко тпшит", function(state)
-    fakeLag = state
-end)
-
-RunService.Stepped:Connect(function()
-    if fakeLag and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        if not storedPos then
-            storedPos = LocalPlayer.Character.HumanoidRootPart.Position
-        end
-        LocalPlayer.Character.HumanoidRootPart.Anchored = true
-    elseif storedPos then
-        LocalPlayer.Character.HumanoidRootPart.Anchored = false
-        LocalPlayer.Character.HumanoidRootPart.Position = storedPos
-        storedPos = nil
-    end
-end)
-
--- Keybinds
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        flying = not flying
-        MoveSec.Items["Fly"]:Toggle(flying)
-    elseif input.KeyCode == Enum.KeyCode.Z then
-        fakeLag = not fakeLag
-    elseif input.KeyCode == Enum.KeyCode.X then
-        waterWalkEnabled = not waterWalkEnabled
-    elseif input.KeyCode == Enum.KeyCode.C then
-        autoCollect = not autoCollect
-    elseif input.KeyCode == Enum.KeyCode.V then
-        local char = LocalPlayer.Character
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.Transparency = 1
-                if part:FindFirstChild("face") then
-                    part.face:Destroy()
-                end
-            end
-        end
+    if fakeLagEnabled then
+        wait(fakeLagDelay)
     end
 end)
