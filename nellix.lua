@@ -195,29 +195,27 @@ local Render = Window:NewTab("Render")
 local RenderSec = Render:NewSection("Teleport Players")
 
 local selectedPlayer = nil
-local playersDropdown
 
 local function updatePlayerList()
-    local list = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            table.insert(list, player.Name)
+    local names = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(names, p.Name)
         end
     end
-    if playersDropdown then
-        playersDropdown:Refresh(list, true)
-    end
+    return names
 end
 
-playersDropdown = RenderSec:NewDropdown("Choose Player", "Select someone", {}, function(p)
+RenderSec:NewDropdown("Choose Player", "Select someone", updatePlayerList(), function(p)
     selectedPlayer = p
 end)
 
-updatePlayerList()
-task.spawn(function()
-    while task.wait(5) do
-        updatePlayerList()
-    end
+Players.PlayerAdded:Connect(function()
+    RenderSec:UpdateDropdown("Choose Player", updatePlayerList())
+end)
+
+Players.PlayerRemoving:Connect(function()
+    RenderSec:UpdateDropdown("Choose Player", updatePlayerList())
 end)
 
 RenderSec:NewButton("Teleport to Player", "Go to them", function()
@@ -368,4 +366,3 @@ local function setupBrainrotBypass()
 end
 
 setupBrainrotBypass()
-
