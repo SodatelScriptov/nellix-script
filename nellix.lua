@@ -195,6 +195,7 @@ local Render = Window:NewTab("Render")
 local RenderSec = Render:NewSection("Teleport Players")
 
 local selectedPlayer = nil
+local dropdownName = "Choose Player"
 
 local function updatePlayerList()
     local names = {}
@@ -206,16 +207,17 @@ local function updatePlayerList()
     return names
 end
 
-RenderSec:NewDropdown("Choose Player", "Select someone", updatePlayerList(), function(p)
+-- Создание дропдауна
+RenderSec:NewDropdown(dropdownName, "Select someone", updatePlayerList(), function(p)
     selectedPlayer = p
 end)
 
-Players.PlayerAdded:Connect(function()
-    RenderSec:UpdateDropdown("Choose Player", updatePlayerList())
-end)
-
-Players.PlayerRemoving:Connect(function()
-    RenderSec:UpdateDropdown("Choose Player", updatePlayerList())
+-- Обновление дропдауна каждые 2 секунды
+task.spawn(function()
+    while true do
+        task.wait(2)
+        RenderSec:UpdateDropdown(dropdownName, updatePlayerList())
+    end
 end)
 
 RenderSec:NewButton("Teleport to Player", "Go to them", function()
