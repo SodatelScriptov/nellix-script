@@ -369,8 +369,8 @@ end
 
 setupBrainrotBypass()
 -- // Дополнения в секцию Extras
-local Extras = Window:NewTab("Extras")
-local ExtrasSection = Extras:NewSection("Extra Tools")
+local Extras = Window:NewTab("Modded")
+local ExtrasSection = Extras:NewSection("Modded Tools")
 
 -- Walk on Water
 local waterWalkEnabled = false
