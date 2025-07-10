@@ -368,3 +368,121 @@ local function setupBrainrotBypass()
 end
 
 setupBrainrotBypass()
+-- // Дополнения в секцию Extras
+local Extras = Window:NewTab("Extras")
+local ExtrasSection = Extras:NewSection("Extra Tools")
+
+-- Walk on Water
+local waterWalkEnabled = false
+local waterPart = Instance.new("Part")
+waterPart.Size = Vector3.new(6, 1, 6)
+waterPart.Anchored = true
+waterPart.Transparency = 1
+waterPart.CanCollide = true
+waterPart.Parent = workspace
+
+ExtrasSection:NewToggle("Walk Water", "Ходьба по воде", function(state)
+    waterWalkEnabled = state
+    waterPart.Transparency = state and 0.5 or 1
+end)
+
+RunService.RenderStepped:Connect(function()
+    if waterWalkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local pos = hrp.Position
+        local ray = Ray.new(pos, Vector3.new(0, -10, 0))
+        local hit = workspace:FindPartOnRay(ray, LocalPlayer.Character)
+        if hit and hit.Material == Enum.Material.Water then
+            waterPart.Position = Vector3.new(pos.X, hit.Position.Y + 2.5, pos.Z)
+        else
+            waterPart.Position = Vector3.new(0, -1000, 0)
+        end
+    end
+end)
+
+-- Invisible Character
+ExtrasSection:NewButton("Invisible Character", "Становится невидимым", function()
+    local char = LocalPlayer.Character
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.Transparency = 1
+            if part:FindFirstChild("face") then
+                part.face:Destroy()
+            end
+        end
+    end
+end)
+
+-- Server Crasher
+ExtrasSection:NewButton("Server Crasher", "⚠️ Может лагать всех", function()
+    for i = 1, 200 do
+        local p = Instance.new("Part", workspace)
+        p.Anchored = false
+        p.Size = Vector3.new(10, 10, 10)
+        p.Position = LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, math.random(5, 20), 0)
+        p.Velocity = Vector3.new(math.random(-500, 500), math.random(-500, 500), math.random(-500, 500))
+        game.Debris:AddItem(p, 10)
+    end
+end)
+
+-- Auto Collect Nearby Tools
+local autoCollect = false
+ExtrasSection:NewToggle("Auto Collect", "Подбирает вещи рядом", function(state)
+    autoCollect = state
+end)
+
+RunService.RenderStepped:Connect(function()
+    if autoCollect then
+        for _, item in pairs(workspace:GetDescendants()) do
+            if item:IsA("Tool") and item:FindFirstChild("Handle") and (item.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude < 12 then
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item.Handle, 0)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item.Handle, 1)
+            end
+        end
+    end
+end)
+
+-- Fake Lag
+local fakeLag = false
+local storedPos = nil
+ExtrasSection:NewToggle("Fake Lag", "Зависает и резко тпшит", function(state)
+    fakeLag = state
+end)
+
+RunService.Stepped:Connect(function()
+    if fakeLag and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        if not storedPos then
+            storedPos = LocalPlayer.Character.HumanoidRootPart.Position
+        end
+        LocalPlayer.Character.HumanoidRootPart.Anchored = true
+    elseif storedPos then
+        LocalPlayer.Character.HumanoidRootPart.Anchored = false
+        LocalPlayer.Character.HumanoidRootPart.Position = storedPos
+        storedPos = nil
+    end
+end)
+
+-- Keybinds
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        flying = not flying
+        MoveSec.Items["Fly"]:Toggle(flying)
+    elseif input.KeyCode == Enum.KeyCode.Z then
+        fakeLag = not fakeLag
+    elseif input.KeyCode == Enum.KeyCode.X then
+        waterWalkEnabled = not waterWalkEnabled
+    elseif input.KeyCode == Enum.KeyCode.C then
+        autoCollect = not autoCollect
+    elseif input.KeyCode == Enum.KeyCode.V then
+        local char = LocalPlayer.Character
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 1
+                if part:FindFirstChild("face") then
+                    part.face:Destroy()
+                end
+            end
+        end
+    end
+end)
