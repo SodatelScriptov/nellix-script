@@ -382,7 +382,17 @@ local savedPosition = nil
 ModSec:NewButton("Save", "Save current position", function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         savedPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
-        ModSec:NewLabel("Position saved!")
+        saveStatusLabel:UpdateLabel("Position: Saved!")
+    else
+        saveStatusLabel:UpdateLabel("Position: Failed to save")
+    end
+end)
+
+ModSec:NewButton("TP to Save", "Teleport to saved position", function()
+    if savedPosition and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = savedPosition
+    else
+        saveStatusLabel:UpdateLabel("Position: Not saved!")
     end
 end)
 
